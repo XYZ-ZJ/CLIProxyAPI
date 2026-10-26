@@ -19,6 +19,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/agentplugins"
+	"github.com/router-for-me/CLIProxyAPI/v8/internal/plugintranslate"
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/wechat"
 	managementHandlers "github.com/router-for-me/CLIProxyAPI/v8/internal/api/handlers/management"
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/api/middleware"
@@ -242,6 +243,8 @@ func NewServer(cfg *config.Config, authManager *auth.Manager, accessManager *sdk
 	s.wechatManager = wechat.NewManager(cfg.WeChat, apiURL, "")
 	s.mgmt.SetWeChatManager(s.wechatManager)
 	s.mgmt.SetAgentPluginService(s.agentPluginSvc)
+		plugintranslate.GetDefault().SetAPIURL(apiURL)
+
 	// Home heartbeat gate: when home is enabled, block all endpoints with 503 until the
 	// subscribe-config heartbeat connection is healthy.
 	engine.Use(s.homeHeartbeatMiddleware())
@@ -472,6 +475,8 @@ func (s *Server) Stop(ctx context.Context) error {
 	log.Debug("API server stopped")
 	return nil
 }
+
+
 
 
 

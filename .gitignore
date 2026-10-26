@@ -71,3 +71,5 @@ docker-compose.override.yml
 .github/.github/
 
 *.zip
+
+work/

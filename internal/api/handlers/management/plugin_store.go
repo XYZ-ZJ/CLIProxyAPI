@@ -17,6 +17,7 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/config"
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/htmlsanitize"
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/pluginhost"
+	"github.com/router-for-me/CLIProxyAPI/v8/internal/plugintranslate"
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/pluginstore"
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/util"
 	sdkconfig "github.com/router-for-me/CLIProxyAPI/v8/sdk/config"
@@ -177,14 +178,15 @@ func (h *Handler) ListPluginStore(c *gin.Context) {
 		} else if cachedVersion := h.pluginReleases.cached(client, plugin); cachedVersion != "" {
 			storeVersion = cachedVersion
 		}
+		locName, locDesc := plugintranslate.GetDefault().Localize(c.Request.Context(), plugin.ID, plugin.Name, plugin.Description)
 		entries = append(entries, pluginStoreListEntry{
 			StoreID:             htmlsanitize.String(item.source.ID + "/" + plugin.ID),
 			SourceID:            htmlsanitize.String(item.source.ID),
 			SourceName:          htmlsanitize.String(item.source.Name),
 			SourceURL:           htmlsanitize.String(item.source.URL),
 			ID:                  htmlsanitize.String(plugin.ID),
-			Name:                htmlsanitize.String(plugin.Name),
-			Description:         htmlsanitize.String(plugin.Description),
+			Name:                htmlsanitize.String(locName),
+			Description:         htmlsanitize.String(locDesc),
 			Author:              htmlsanitize.String(plugin.Author),
 			Version:             htmlsanitize.String(storeVersion),
 			Repository:          htmlsanitize.String(plugin.Repository),
@@ -212,13 +214,14 @@ func (h *Handler) ListPluginStore(c *gin.Context) {
 	if h.agentPluginSvc != nil {
 		agentList := h.agentPluginSvc.ListPlugins(c.Request.Context(), "", "", "")
 		for _, ap := range agentList {
+			locName, locDesc := plugintranslate.GetDefault().Localize(c.Request.Context(), ap.ID, ap.Name, ap.Description)
 			entries = append(entries, pluginStoreListEntry{
 				StoreID:             ap.ID,
 				SourceID:            ap.SourceID,
 				SourceName:          "Agent Skills",
 				ID:                  ap.ID,
-				Name:                ap.Name,
-				Description:         ap.Description,
+				Name:                locName,
+				Description:         locDesc,
 				Author:              ap.Author,
 				Version:             ap.Version,
 				InstallType:         "direct",
@@ -948,4 +951,5 @@ func pluginBusy(host *pluginhost.Host, id string) bool {
 	}
 	return host.PluginBusy(id)
 }
+
 
