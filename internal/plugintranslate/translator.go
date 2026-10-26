@@ -8,7 +8,6 @@ import (
 	"io"
 	"net/http"
 	"os"
-	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -292,3 +291,4 @@ func containsEnglish(s string) bool {
 	}
 	return asciiCount > 10
 }
+
