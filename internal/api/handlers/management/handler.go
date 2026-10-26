@@ -14,7 +14,9 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/router-for-me/CLIProxyAPI/v8/internal/agentplugins"
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/buildinfo"
+	"github.com/router-for-me/CLIProxyAPI/v8/internal/wechat"
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/config"
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/pluginhost"
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/pluginstore"
@@ -63,6 +65,22 @@ type Handler struct {
 	pluginReleases          pluginReleaseCache
 	siwcOAuthFactory        func(*config.Config) siwcOAuthService
 	siwcCommitMu            sync.Mutex
+	wechatManager           *wechat.Manager
+	agentPluginSvc          *agentplugins.Service
+}
+
+// SetWeChatManager assigns the WeChat manager instance.
+func (h *Handler) SetWeChatManager(mgr *wechat.Manager) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	h.wechatManager = mgr
+}
+
+// SetAgentPluginService assigns the Agent Plugin marketplace service instance.
+func (h *Handler) SetAgentPluginService(svc *agentplugins.Service) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	h.agentPluginSvc = svc
 }
 
 type configReloadSnapshot struct {
@@ -517,3 +535,4 @@ func (h *Handler) updateStringField(c *gin.Context, set func(string)) {
 	set(*body.Value)
 	h.persistLocked(c)
 }
+

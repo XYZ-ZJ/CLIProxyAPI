@@ -18,6 +18,8 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/router-for-me/CLIProxyAPI/v8/internal/agentplugins"
+	"github.com/router-for-me/CLIProxyAPI/v8/internal/wechat"
 	managementHandlers "github.com/router-for-me/CLIProxyAPI/v8/internal/api/handlers/management"
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/api/middleware"
 	codexlive "github.com/router-for-me/CLIProxyAPI/v8/internal/client/codex/live"
@@ -84,6 +86,8 @@ type Server struct {
 
 	// management handler
 	mgmt *managementHandlers.Handler
+	wechatManager *wechat.Manager
+	agentPluginSvc *agentplugins.Service
 
 	// pluginHost owns dynamic plugin Management API route dispatch.
 	pluginHost *pluginhost.Host
@@ -232,6 +236,12 @@ func NewServer(cfg *config.Config, authManager *auth.Manager, accessManager *sdk
 	}
 	s.localPassword = optionState.localPassword
 
+	// Initialize agent plugins and wechat integration
+	s.agentPluginSvc = agentplugins.NewService(cfg.AgentPlugins)
+	apiURL := fmt.Sprintf("http://127.0.0.1:%d/v1/chat/completions", cfg.Port)
+	s.wechatManager = wechat.NewManager(cfg.WeChat, apiURL, "")
+	s.mgmt.SetWeChatManager(s.wechatManager)
+	s.mgmt.SetAgentPluginService(s.agentPluginSvc)
 	// Home heartbeat gate: when home is enabled, block all endpoints with 503 until the
 	// subscribe-config heartbeat connection is healthy.
 	engine.Use(s.homeHeartbeatMiddleware())
@@ -344,6 +354,9 @@ func (s *Server) Start() error {
 	httpErrCh := make(chan error, 1)
 	acceptErrCh := make(chan error, 1)
 
+	if cfg != nil && cfg.WeChat.Enabled && s.wechatManager != nil {
+		_ = s.wechatManager.Start()
+	}
 	go func() {
 		httpErrCh <- s.server.Serve(httpListener)
 	}()
@@ -449,6 +462,9 @@ func (s *Server) Stop(ctx context.Context) error {
 	if s.codexLiveHandler != nil {
 		s.codexLiveHandler.Close()
 	}
+	if s.wechatManager != nil {
+		s.wechatManager.Stop()
+	}
 	if errCloseServer != nil {
 		return fmt.Errorf("failed to shutdown HTTP server: %v", errCloseServer)
 	}
@@ -456,3 +472,6 @@ func (s *Server) Stop(ctx context.Context) error {
 	log.Debug("API server stopped")
 	return nil
 }
+
+
+

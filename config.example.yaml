@@ -1278,3 +1278,32 @@ plugins:
 #     switch-project: true
 #     switch-preview-model: true
 # antigravity-credits moved to oauth.providers.antigravity.antigravity-credits.
+
+# WeChat iLink Bot direct connection integration
+wechat:
+  enabled: false
+  base-url: "https://ilinkai.weixin.qq.com"
+  token: ""
+  account-id: ""
+  allow-all: false
+  allow-user-ids:
+    # - "example_ilink_user_id"
+  require-prefix: true
+  prefix: "/codex"
+  default-model: "gpt-4o"
+  poll-timeout-seconds: 35
+  max-reply-chars: 1800
+  route-tag: ""
+
+# Codex / AI Agent plugin marketplace and cache proxy
+agent-plugins:
+  enabled: true
+  cache-dir: "agent-plugins-cache"
+  sources:
+    - id: "curated"
+      name: "Official & Curated Skills"
+      description: "Official and community validated AI Agent plugins and tools"
+    - id: "codex-plus-cache"
+      name: "Codex++ Plugin Mirror"
+      repository: "BigPizzaV3/CodexPlusPlusPluginCache"
+      description: "High-speed mirror and offline package cache for AI coding skills"

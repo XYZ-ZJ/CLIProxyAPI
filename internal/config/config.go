@@ -200,4 +200,11 @@ type Config struct {
 
 	// Payload defines default and override rules for provider payload parameters.
 	Payload PayloadConfig `yaml:"payload" json:"payload"`
+
+	// WeChat configures the WeChat iLink direct connection bot.
+	WeChat WeChatConfig `yaml:"wechat" json:"wechat"`
+
+	// AgentPlugins configures the Codex/Agent plugin marketplace and proxy.
+	AgentPlugins AgentPluginsConfig `yaml:"agent-plugins" json:"agent-plugins"`
 }
+

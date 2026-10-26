@@ -64,4 +64,20 @@ func (s *Server) registerManagementV8Routes() {
 	v8.GET("/plugins/:id/quota", s.mgmt.GetPluginQuota)
 	v8.POST("/plugins/:id/quota", s.mgmt.FetchPluginQuota)
 	v8.DELETE("/plugins/:id/quota", s.mgmt.ResetPluginQuota)
+
+	// WeChat integration management routes
+	v8.GET("/wechat/status", s.mgmt.GetWeChatStatus)
+	v8.GET("/wechat/qr", s.mgmt.GetWeChatQR)
+	v8.GET("/wechat/qr/status", s.mgmt.GetWeChatQRStatus)
+	v8.POST("/wechat/start", s.mgmt.PostWeChatStart)
+	v8.POST("/wechat/stop", s.mgmt.PostWeChatStop)
+	v8.GET("/wechat/config", s.mgmt.GetWeChatConfig)
+	v8.PUT("/wechat/config", s.mgmt.PutWeChatConfig)
+
+	// Agent plugins marketplace entry routes
+	v8.GET("/agent-plugins/market", s.mgmt.ListAgentPluginMarket)
+	v8.GET("/agent-plugins/market/:id", s.mgmt.GetAgentPlugin)
+	v8.GET("/agent-plugins/sources", s.mgmt.ListAgentPluginSources)
+	v8.POST("/agent-plugins/sources", s.mgmt.PostAgentPluginSource)
 }
+

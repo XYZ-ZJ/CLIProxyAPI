@@ -89,6 +89,37 @@ func (s *Server) setupRoutes() {
 		v1.POST("/alpha/search", s.codexAlphaSearch)
 		v1.POST("/live", s.codexLiveHandler.Handle)
 		v1.GET("/live/:call_id", s.codexLiveHandler.HandleSideband)
+
+		// Agent plugins public marketplace entry
+		v1.GET("/agent-plugins/market", func(c *gin.Context) {
+			if s.agentPluginSvc == nil {
+				c.JSON(http.StatusOK, gin.H{"plugins": []any{}, "sources": []any{}, "total": 0})
+				return
+			}
+			query := c.Query("q")
+			category := c.Query("category")
+			sourceID := c.Query("source")
+			plugins := s.agentPluginSvc.ListPlugins(c.Request.Context(), query, category, sourceID)
+			sources := s.agentPluginSvc.ListSources()
+			c.JSON(http.StatusOK, gin.H{
+				"plugins": plugins,
+				"sources": sources,
+				"total":   len(plugins),
+			})
+		})
+		v1.GET("/agent-plugins/market/:id", func(c *gin.Context) {
+			if s.agentPluginSvc == nil {
+				c.JSON(http.StatusNotFound, gin.H{"error": "plugin service not initialized"})
+				return
+			}
+			id := c.Param("id")
+			plugin, found := s.agentPluginSvc.GetPlugin(c.Request.Context(), id)
+			if !found {
+				c.JSON(http.StatusNotFound, gin.H{"error": "plugin not found"})
+				return
+			}
+			c.JSON(http.StatusOK, plugin)
+		})
 	}
 
 	realtimeAuth := realtimeAuthMiddleware(s.accessManager, s.codexLiveHandler)
@@ -1345,3 +1376,4 @@ func homeModelInt64Value(model map[string]any, keys ...string) int64 {
 	}
 	return 0
 }
+
