@@ -11,7 +11,34 @@ permissions:
   contents: read
 
 jobs:
-  build:
+  build-windows:
+    name: build-windows-amd64
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: Refresh models catalog
+        shell: bash
+        run: bash .github/scripts/refresh-model-catalogs.sh
+      - name: Build Windows binary
+        shell: bash
+        run: |
+          mkdir -p bin
+          CGO_ENABLED=1 GOOS=windows GOARCH=amd64 go build -ldflags="-s -w" -o bin/cli-proxy-api.exe ./cmd/server
+      - name: Upload Windows binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: cli-proxy-api-windows
+          path: bin/cli-proxy-api.exe
+          retention-days: 7
+
+  build-linux:
+    name: build-linux-amd64
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -23,14 +50,13 @@ jobs:
           cache: true
       - name: Refresh models catalog
         run: bash .github/scripts/refresh-model-catalogs.sh
-      - name: Build binaries
+      - name: Build Linux binary
         run: |
           mkdir -p bin
-          GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -ldflags="-s -w" -o bin/cli-proxy-api.exe ./cmd/server
-          GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -ldflags="-s -w" -o bin/cli-proxy-api ./cmd/server
-      - name: Upload binaries artifact
+          CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o bin/cli-proxy-api ./cmd/server
+      - name: Upload Linux binary
         uses: actions/upload-artifact@v4
         with:
-          name: cli-proxy-api-binaries
-          path: bin/*
+          name: cli-proxy-api-linux
+          path: bin/cli-proxy-api
           retention-days: 7

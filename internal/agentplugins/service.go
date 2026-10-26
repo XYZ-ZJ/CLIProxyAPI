@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -211,6 +213,46 @@ func (s *Service) GetPlugin(ctx context.Context, id string) (*Plugin, bool) {
 	return &p, true
 }
 
+// InstallPlugin installs an agent plugin into the target directory.
+func (s *Service) InstallPlugin(ctx context.Context, id, targetBaseDir string) (string, error) {
+	s.cfgMu.Lock()
+	defer s.cfgMu.Unlock()
+
+	p, ok := s.plugins[id]
+	if !ok {
+		return "", fmt.Errorf("plugin %q not found in agent marketplace", id)
+	}
+
+	if targetBaseDir == "" {
+		targetBaseDir = "plugins"
+	}
+
+	destDir := filepath.Join(targetBaseDir, id)
+	if err := os.MkdirAll(destDir, 0755); err != nil {
+		return "", fmt.Errorf("create plugin directory: %w", err)
+	}
+
+	// Write metadata manifest file
+	manifestPath := filepath.Join(destDir, "plugin.json")
+	metaBytes, err := json.MarshalIndent(p, "", "  ")
+	if err != nil {
+		return "", fmt.Errorf("marshal plugin manifest: %w", err)
+	}
+	if err := os.WriteFile(manifestPath, metaBytes, 0644); err != nil {
+		return "", fmt.Errorf("write plugin manifest: %w", err)
+	}
+
+	// Write SKILL.md
+	skillPath := filepath.Join(destDir, "SKILL.md")
+	skillContent := fmt.Sprintf("# %s\n\n%s\n\n- Version: %s\n- Author: %s\n- Category: %s\n", p.Name, p.Description, p.Version, p.Author, p.Category)
+	_ = os.WriteFile(skillPath, []byte(skillContent), 0644)
+
+	p.Installed = true
+	s.plugins[id] = p
+	log.Infof("agentplugins: plugin %s (%s) installed successfully at %s", p.Name, id, destDir)
+	return destDir, nil
+}
+
 // ListSources returns all registered plugin sources.
 func (s *Service) ListSources() []Source {
 	s.cfgMu.RLock()
@@ -274,4 +316,3 @@ func (s *Service) FetchRemoteIndex(ctx context.Context, url string, sourceID str
 	log.Infof("agentplugins: loaded %d plugins from remote source %s", len(parsed.Plugins), sourceID)
 	return nil
 }
-

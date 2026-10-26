@@ -209,6 +209,29 @@ func (h *Handler) ListPluginStore(c *gin.Context) {
 		})
 	}
 
+	if h.agentPluginSvc != nil {
+		agentList := h.agentPluginSvc.ListPlugins(c.Request.Context(), "", "", "")
+		for _, ap := range agentList {
+			entries = append(entries, pluginStoreListEntry{
+				StoreID:             ap.ID,
+				SourceID:            ap.SourceID,
+				SourceName:          "Agent Skills",
+				ID:                  ap.ID,
+				Name:                ap.Name,
+				Description:         ap.Description,
+				Author:              ap.Author,
+				Version:             ap.Version,
+				InstallType:         "direct",
+				Installed:           ap.Installed,
+				InstalledVersion:    ap.Version,
+				Path:                "plugins/" + ap.ID,
+				Enabled:             true,
+				EffectiveEnabled:    true,
+				Tags:                ap.Tags,
+			})
+		}
+	}
+
 	c.JSON(http.StatusOK, pluginStoreListResponse{
 		PluginsEnabled: pluginsEnabled,
 		PluginsDir:     htmlsanitize.String(pluginsDir),
@@ -245,6 +268,25 @@ func (h *Handler) installPluginFromStore(c *gin.Context, goos, goarch string) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "plugin_store_source_invalid", "message": errSources.Error()})
 		return
 	}
+	if h.agentPluginSvc != nil {
+		if ap, found := h.agentPluginSvc.GetPlugin(installCtx, id); found {
+			installedPath, errInstallAgent := h.agentPluginSvc.InstallPlugin(installCtx, id, pluginsDir)
+			if errInstallAgent != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "plugin_install_failed", "message": errInstallAgent.Error()})
+				return
+			}
+			c.JSON(http.StatusOK, gin.H{
+				"status":           "installed",
+				"id":               id,
+				"name":             ap.Name,
+				"version":          ap.Version,
+				"path":             installedPath,
+				"restart_required": false,
+			})
+			return
+		}
+	}
+
 	source, plugin, client, okPlugin := h.findPluginStoreInstallTarget(installCtx, proxyURL, storeAuth, sources, id, c.Query("source"), c)
 	if !okPlugin {
 		return
@@ -906,3 +948,4 @@ func pluginBusy(host *pluginhost.Host, id string) bool {
 	}
 	return host.PluginBusy(id)
 }
+

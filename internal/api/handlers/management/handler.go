@@ -343,7 +343,11 @@ func (h *Handler) Middleware() gin.HandlerFunc {
 		c.Header("X-CPA-VERSION", buildinfo.Version)
 		c.Header("X-CPA-COMMIT", buildinfo.Commit)
 		c.Header("X-CPA-BUILD-DATE", buildinfo.BuildDate)
-		c.Header("X-CPA-SUPPORT-PLUGIN", pluginhost.SupportPluginHeaderValue())
+				supportVal := pluginhost.SupportPluginHeaderValue()
+		if supportVal == "0" && h.agentPluginSvc != nil {
+			supportVal = "1"
+		}
+		c.Header("X-CPA-SUPPORT-PLUGIN", supportVal)
 
 		clientIP := c.ClientIP()
 		localClient := clientIP == "127.0.0.1" || clientIP == "::1"
@@ -535,4 +539,5 @@ func (h *Handler) updateStringField(c *gin.Context, set func(string)) {
 	set(*body.Value)
 	h.persistLocked(c)
 }
+
 
